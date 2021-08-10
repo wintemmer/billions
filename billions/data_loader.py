@@ -4,6 +4,7 @@ import pandas as pd
 def __init__():
     pass
 
+
 def load(fname, cname, ftype='csv'):
     """
     Read data from file.
@@ -12,7 +13,7 @@ def load(fname, cname, ftype='csv'):
         fname: factor file name (with columns: [factor, trade_dt, code])
         cname: close file name (with columns: [close, trade_dt, code])
         type: file type ([csv, xlsx, json])
-    
+
     returns:
         data: 2-index(trade_dt, code), factor, close
     """

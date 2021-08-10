@@ -1,9 +1,13 @@
 import numpy as np
 
+
 class my_profolio:
 
     def __init__(self, amount) -> None:
         self.profolio = {'freemoney': amount}
+
+    def get_profolio(self):
+        return self.profolio.keys
 
     def buy(self, stock, amount):
         if self.profolio['freemoney'] < amount:
@@ -25,13 +29,17 @@ class my_profolio:
             self.profolio.pop(stock)
 
     def profolio_report(self):
-        print('my profolio: ' + self.profolio + ' -- total: ' + np.mean(self.profolio))
+        print('my profolio: ' + self.profolio +
+              ' -- total: ' + np.mean(self.profolio))
 
 
 class euqal_profolio(my_profolio):
 
     def __init__(self, amount) -> None:
         super().__init__(amount)
+
+    def get_profolio(self):
+        return super().get_profolio()
 
     def buy(self, stock, amount):
         return super().buy(stock, amount)
