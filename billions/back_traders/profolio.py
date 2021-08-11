@@ -3,8 +3,9 @@ import numpy as np
 
 class my_profolio:
 
-    def __init__(self, amount) -> None:
+    def __init__(self, amount=1000000, fluent=1) -> None:
         self.profolio = {'freemoney': amount}
+        self.fluent = fluent
 
     def get_profolio(self):
         pro = list(self.profolio.keys())
@@ -14,6 +15,7 @@ class my_profolio:
     def buy(self, stock, amount):
         if self.profolio['freemoney'] < amount:
             print('Sorry, you don\'t have enoung money')
+
         if stock in self.profolio.keys():
             self.profolio[stock] += amount
             self.profolio['freemoney'] -= amount
@@ -31,8 +33,8 @@ class my_profolio:
             self.profolio.pop(stock)
 
     def profolio_report(self):
-        print('my profolio: ' + self.profolio +
-              ' -- total: ' + np.mean(self.profolio))
+        print('my profolio: ' + str(self.profolio) +
+              ' -- total: ' + str(np.mean(list(self.profolio.values()))))
 
     def adjust_price(self, rets):
         for code in self.profolio.keys():
@@ -42,8 +44,8 @@ class my_profolio:
 
 class euqal_profolio(my_profolio):
 
-    def __init__(self, amount) -> None:
-        super().__init__(amount)
+    def __init__(self, amount, fluent) -> None:
+        super().__init__(amount, fluent)
 
     def get_profolio(self):
         return super().get_profolio()
@@ -57,25 +59,36 @@ class euqal_profolio(my_profolio):
     def profolio_report(self):
         return super().profolio_report()
 
-    def add(self, stock):
-        self.profolio[stock] = 0
+    def adjust_price(self, rets):
+        return super().adjust_price(rets)
+
+    def add(self, stocks):
+        for stock in stocks:
+            self.profolio[stock] = 0
+
+    def sell_all(self, stocks):
+        for stock in stocks:
+            if stock in self.profolio.keys():
+                self.sell(stock, self.profolio[stock])
+            else:
+                print('Sorry, you don\'t have this ' + stock)
+
+    def add_n_sell(self, buys, sells):
+        self.sell_all(sells)
+        self.add(buys)
         self.rebalance()
 
-    def sell_all(self, stock):
-        if stock in self.profolio.keys():
-            self.sell(stock, self.profolio[stock])
-        else:
-            print('Sorry, you don\'t have this ' + stock)
-        if len(self.profolio) > 1:
-            self.rebalance()
-
     def rebalance(self):
-        each = int(np.sum(list(self.profolio.values()))/(len(self.profolio)-1))
+        each = int(self.fluent*np.sum(list(self.profolio.values()))/(len(self.profolio)-1))
+        for s in self.profolio.keys():
+            if s == 'freemoney':
+                pass
+            else:
+                if self.profolio[s] > each:
+                    self.sell(s, self.profolio[s] - each)
         for s in self.profolio.keys():
             if s == 'freemoney':
                 pass
             else:
                 if self.profolio[s] < each:
                     self.buy(s, each - self.profolio[s])
-                else:
-                    self.sell(s, self.profolio[s] - each)

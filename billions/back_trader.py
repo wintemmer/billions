@@ -4,6 +4,7 @@ from pandas.io.sql import read_sql_query
 from tqdm import tqdm
 
 from billions.back_traders.profolio import *
+from billions.back_traders.deal_time import *
 
 # TODO: 换仓周期
 # TODO: 手续费
@@ -21,13 +22,14 @@ class trader:
     peride: the peride you need to change your profolio
     """
 
-    def __init__(self, data, amount, profolio=euqal_profolio, peride='D'):
+    def __init__(self, data, amount=1000000, fluent=1, profolio=euqal_profolio, peride='D'):
         """
         init function
         """
         self.type = profolio
         self.amount = amount
-        self.profolio = profolio(amount)
+        self.fluent = fluent
+        self.profolio = profolio(amount, fluent)
         self.peride = peride
 
         self.dates = []
@@ -40,6 +42,8 @@ class trader:
         """
         if self.peride == 'D':
             self.trade_dates = self.dates
+        if self.peride == 'M':
+            self.trade_dates = monthly(self.dates)
 
     def today_return(self, date):
         """
@@ -58,7 +62,7 @@ class trader:
 
     def reset_profolio(self, reset):
         if reset:
-            self.profolio = self.type(self.amount)
+            self.profolio = self.type(self.amount, self.fluent)
 
     # main function
     def trade(self, date):
@@ -112,16 +116,16 @@ class group_trader(trader):
     inverse: if the factor is inversed
     """
 
-    def __init__(self, data, amount, profolio=euqal_profolio, peride='D', number=5, inverse=False):
+    def __init__(self, data, amount=1000000, fluent=1, profolio=euqal_profolio, peride='D', number=5, inverse=False):
         """
         init fuction
         """
-        trader.__init__(self, data, amount, profolio, peride)
+        trader.__init__(self, data, amount, fluent, profolio, peride)
 
         self.dates = np.unique(np.array(list(data.index))[:, 0])
         self.factor = data[['factor']]
         self.close = data[['close']]
-        self.inverse = inverse
+        self.inverse = not inverse
         self.lable = number
         self.number = number
 
@@ -157,12 +161,16 @@ class group_trader(trader):
         trade function: change profolio to target
         """
         codes = self.get_lable_code(date)
+        buys = []
+        sells = []
         for code in self.profolio.get_profolio():
             if code not in codes:
-                self.profolio.sell_all(code)
+                sells.append(code)
         for code in codes:
             if code not in self.profolio.get_profolio():
-                self.profolio.add(code)
+                buys.append(code)
+
+        self.profolio.add_n_sell(buys, sells)
 
     def run_top(self, lable, peride, reset):
         return super().run(lable=lable, peride=peride, reset=reset)
@@ -171,7 +179,7 @@ class group_trader(trader):
         """
         run for all lable
         """
-        if peride!=-1:
+        if peride != -1:
             self.set_peride(peride)
         results = []
         for lable in range(1, self.number+1, 1):
@@ -189,8 +197,12 @@ class group_trader(trader):
         """
         today_factor = self.factor.loc[date, :].sort_values(
             'factor', ascending=self.inverse).reset_index()
+        if self.inverse:
+            def change(x): return -x
+        else:
+            def change(x): return x
         today_factor['factor'] = pd.qcut(
-            today_factor['factor'], self.number, labels=range(1, self.number+1, 1))
+            change(today_factor['factor']), self.number, labels=range(1, self.number+1, 1))
         codes = list(
             today_factor[today_factor['factor'] == self.lable]['code'])
         return codes
