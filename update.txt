@@ -1,0 +1,3 @@
+python setup.py sdist bdist
+python -m twine upload dist/Shouzheng_billions-x.x.x.tar.gz
+pip install --upgrade
