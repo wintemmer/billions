@@ -5,7 +5,7 @@ def __init__():
     pass
 
 
-def load(fname, cname, ftype='csv'):
+def loader_factor_close(fname, cname, ftype='csv'):
     """
     Read data from file.
 
@@ -47,4 +47,10 @@ def load(fname, cname, ftype='csv'):
     data.trade_dt = pd.DatetimeIndex(data.trade_dt)
     data = data.set_index(['trade_dt', 'code'])
 
+    return data
+
+
+def load_price(fname):
+    data = pd.read_csv(fname, index_col=0)
+    data = data.set_index(['trade_dt', 'code'])
     return data
