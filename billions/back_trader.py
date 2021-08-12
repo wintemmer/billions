@@ -32,7 +32,7 @@ class trader:
         self.profolio = profolio(amount, fluent)
         self.peride = peride
 
-        self.dates = []
+        self.dates = np.unique(np.array(list(data.index))[:, 0])
         self.lable = 1
 
     # mid function
@@ -40,10 +40,17 @@ class trader:
         """
         it can return the trade date you need.
         """
-        if self.peride == 'D':
-            self.trade_dates = self.dates
-        if self.peride == 'M':
-            self.trade_dates = monthly(self.dates)
+        if type(self.peride) == int:
+            self.trade_dates = ndays(self.dates, self.peride)
+        else:
+            if self.peride == 'D':
+                self.trade_dates = self.dates
+            if self.peride == 'M':
+                self.trade_dates = monthly(self.dates)
+            if self.peride == 'Mf':
+                self.trade_dates = monthly(self.dates, type='first')
+            if self.peride == 'Ml':
+                self.trade_dates = monthly(self.dates, type='last')
 
     def today_return(self, date):
         """
@@ -121,8 +128,7 @@ class group_trader(trader):
         init fuction
         """
         trader.__init__(self, data, amount, fluent, profolio, peride)
-
-        self.dates = np.unique(np.array(list(data.index))[:, 0])
+        
         self.factor = data[['factor']]
         self.close = data[['close']]
         self.inverse = not inverse

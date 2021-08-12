@@ -11,3 +11,8 @@ def monthly(data, type='first'):
     elif type=='last':
         last_day = grouped.max().to_list()
     return last_day
+
+def ndays(data, n):
+    data = pd.DataFrame(data)
+    thedates = list(data.loc[range(0, len(data), n)][0])
+    return thedates
