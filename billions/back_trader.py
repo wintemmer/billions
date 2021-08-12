@@ -5,8 +5,8 @@ from tqdm import tqdm
 
 from billions.back_traders.profolio import *
 from billions.back_traders.deal_time import *
+from billions.back_traders.ploter import *
 
-# TODO: 换仓周期
 # TODO: 手续费
 # TODO：买入和卖出价格
 
@@ -34,6 +34,7 @@ class trader:
 
         self.dates = np.unique(np.array(list(data.index))[:, 0])
         self.lable = 1
+        self.results = {}
 
     # mid function
     def get_trade_date(self):
@@ -71,6 +72,10 @@ class trader:
         if reset:
             self.profolio = self.type(self.amount, self.fluent)
 
+    # analysis function
+    def ploter(self):
+        return theploter(self)
+
     # main function
     def trade(self, date):
         """
@@ -78,7 +83,7 @@ class trader:
         """
         pass
 
-    def run(self, lable=-1, peride=-1, reset=True):
+    def run_top(self, lable=-1, peride=-1, reset=True):
         """
         it's where everything begin
 
@@ -103,7 +108,13 @@ class trader:
             result[date] = self.profolio.profolio.copy()
         result = pd.DataFrame(result.values(), index=result.keys())
         result = result.fillna(0)
+        self.results[self.lable] = result
         return result
+
+    def run(self, peride=-1):
+        result = self.results[self.lable]
+        networth = pd.DataFrame(result.sum(axis=1))
+        networth.columns = ['networth']
 
 
 class group_trader(trader):
@@ -128,7 +139,7 @@ class group_trader(trader):
         init fuction
         """
         trader.__init__(self, data, amount, fluent, profolio, peride)
-        
+
         self.factor = data[['factor']]
         self.close = data[['close']]
         self.inverse = not inverse
@@ -178,8 +189,8 @@ class group_trader(trader):
 
         self.profolio.add_n_sell(buys, sells)
 
-    def run_top(self, lable, peride, reset):
-        return super().run(lable=lable, peride=peride, reset=reset)
+    def run_top(self, lable=-1, peride=-1, reset=True):
+        return super().run_top(lable=lable, peride=peride, reset=reset)
 
     def run(self, peride=-1):
         """
@@ -191,10 +202,21 @@ class group_trader(trader):
         for lable in range(1, self.number+1, 1):
             result = self.run_top(lable=lable, peride=self.peride, reset=True)
             results.append(result)
-        self.daily = pd.concat(
+
+        # get networth
+        self.networth = pd.concat(
             list(map(lambda x: x.sum(axis=1), results)), axis=1)
-        self.daily.columns = list(
+        self.networth.columns = list(
             map(lambda x: 'group-' + str(x), range(1, self.number+1, 1)))
+
+        # get long short
+        self.longshort = self.networth.copy()
+        self.longshort['long/short-1'] = self.networth['group-' +
+                                                       str(1)] / self.networth['group-'+str(self.number)]
+        self.longshort['long/short-2'] = self.networth['group-' +
+                                                       str(2)] / self.networth['group-'+str(self.number-1)]
+        for i in range(1, self.number+1, 1):
+            self.longshort = self.longshort.drop('group-'+str(i), axis=1)
 
     # child tool function
     def get_lable_code(self, date):
