@@ -5,7 +5,7 @@ from setuptools import _install_setup_requires, setup, find_packages
 
 setup(
     name='Shouzheng_billions',
-    version = '0.1.1',
+    version = '0.1.3',
     author='Shouzheng-Hu',
     author_email='obobob32@gmail.com',
     url='https://github.com/wintemmer/billions',

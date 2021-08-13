@@ -6,9 +6,11 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
 
-class theploter:
-    def __init__(self, trader):
+class line_ploter:
+    def __init__(self, trader, name):
         self.trader = trader
+        self.name = name
+        self.plot()
 
     def plot_networth(self):
         fig = px.line(self.trader.networth)
@@ -38,8 +40,8 @@ class theploter:
     def get_name(self):
         if type(self.trader.peride) == str:
             if self.trader.peride == 'D':
-                return self.trader.name + ' -- ' + 'daily backtest'
+                return self.name + ' -- daily backtest'
             if self.trader.peride[0] == 'M':
-                return self.trader.name + ' -- ' + 'monthly backtest'
+                return self.name + ' -- monthly backtest'
         if type(self.trader.peride) == int:
-            return self.trader.name + ' -- ' + str(self.trader.peride) + ' days backtest'
+            return self.name + ' -- ' + str(self.trader.peride) + ' days backtest'
