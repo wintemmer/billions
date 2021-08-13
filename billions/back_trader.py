@@ -9,7 +9,8 @@ from billions.tools.ploter import *
 
 # TODO: 手续费
 # TODO：买入和卖出价格，当前均使用收盘价，假设能够以收盘价成交s
-
+# TODO: 支持做空（profolio中amount可以为负值）
+# TODO: profolio中加入买入价格等信息
 
 class trader:
     """
@@ -22,20 +23,19 @@ class trader:
     peride: the peride you need to change your profolio
     """
 
-    def __init__(self, data, total_amount=1000000, fluent=1, profolio=euqal_profolio, peride='D', name='backtest'):
+    def __init__(self, data, total_amount=1000000, peride='D', price_col='close'):
         """
         init function
         """
-        self.type = profolio
+        self.data = data
         self.total_amount = total_amount
-        self.fluent = fluent
         self.peride = peride
-        self.name = name
-        self.lables = [1]
-        self.dates = np.unique(np.array(list(data.index))[:, 0])
-        self.profolio = profolio(self.dates[0], total_amount, fluent)
+        self.price_col = price_col
+        self.lable = 1
 
-        # self.ret = self.caculate_return()
+        self.lables = [1]
+        self.dates = np.unique(np.array(list(self.data.index))[:, 0])
+        self.profolio = profolio(self.dates[0], total_amount)
 
         self.results = {}
 
@@ -58,13 +58,13 @@ class trader:
             if self.peride == 'Ml':
                 self.trade_dates = monthly(self.dates, type='last')
 
-    def today_return(self, date):
+    def today_price(self, date):
         """
         it can get returns in certain date
         **You don't want to change this**
         """
-        r = self.ret.loc[date].reset_index()[['code', 'return']]
-        return dict(r.set_index('code')['return'])
+        prices = self.data.loc[date].reset_index()[['code', self.price_col]]
+        return dict(prices.set_index('code')[self.price_col])
 
     # set function
     def set_lable(self, lable):
@@ -89,16 +89,16 @@ class trader:
         **You don't want to change this**
         """
         if reset:
-            self.profolio = self.type(
-                self.dates[0], self.total_amount, self.fluent)
+            self.profolio = profolio(
+                self.dates[0], self.total_amount)
 
     # analysis function
-    def ploter(self):
+    def plot(self, name='Strategy'):
         """
         return the ploter
         **You don't want to change this**
         """
-        return theploter(self)
+        return line_ploter(self, name)
 
     # main function
     def _run(self, lable=-1, peride=-1, reset=True):
@@ -118,21 +118,21 @@ class trader:
         self.get_trade_date()
 
         # satrt to trade
-        result = {}
+        networths = {}
         for date in tqdm(self.dates, leave=False, desc="lable-" + str(self.lable)):
-            ret = self.today_return(date)
-            self.profolio.adjust_price(date, ret)  # adjust daily price
+            prices = self.today_price(date)
+            self.profolio.adjust_price(date, prices)  # adjust daily price
             if date in self.trade_dates:
-                self.trade(date)
-            result[date] = self.profolio.profolio.copy()
-        result = pd.DataFrame(result.values(), index=result.keys())
-        result = result.fillna(0)
-        self.results[self.lable] = result
+                self.trade(date, prices)
+            networths[date] = self.profolio.get_total()
+        # result = pd.DataFrame(result.values(), index=result.keys())
+        # result = result.fillna({'amount':0, 'price':0, 'buy_price': 0})
+        return pd.DataFrame([networths]).T
 
-        result = self.results[self.lable]
-        self.networth = pd.DataFrame(result.sum(axis=1))
-        self.networth.columns = ['networth']
-        return self.networth
+        # result = self.results[self.lable]
+        # self.networth = pd.DataFrame(result.sum(axis=1))
+        # self.networth.columns = ['networth']
+        # return self.networth
 
     def run(self, peride=-1):
         """
@@ -167,13 +167,10 @@ class trader:
         elif len(self.lables) < 2:
             self.longshort = -1
 
-    def trade(self, date):
+    def trade(self, date, prices):
         pass
 
     def signal(self):
-        return
-
-    def caculate_return(self):
         return
 
 
@@ -194,12 +191,11 @@ class group_trader(trader):
     inverse: if the factor is inversed
     """
 
-    def __init__(self, data, total_amount=1000000, fluent=1, profolio=euqal_profolio, peride='D', number=5, inverse=False, name='backtest'):
+    def __init__(self, data, total_amount=1000000, peride='D', price_col='close', number=5, inverse=False):
         """
         init fuction
         """
-        trader.__init__(self, data, total_amount,
-                        fluent, profolio, peride, name)
+        trader.__init__(self, data, total_amount, peride, price_col)
 
         self.factor = data[['factor']]
         self.close = data[['close']]
@@ -207,10 +203,9 @@ class group_trader(trader):
         self.number = number
 
         self.lables = list(range(1, self.number+1, 1))
-        self.ret = self.caculate_return()
 
     # main function
-    def trade(self, date):
+    def trade(self, date, prices):
         """
         trade function: change profolio to target
         """
@@ -224,7 +219,7 @@ class group_trader(trader):
             if code not in self.profolio.get_profolio():
                 buys.append(code)
 
-        self.profolio.add_n_sell(buys, sells)
+        self.profolio.add_n_sell(buys, sells, prices)
 
     # child tool function
     def signal(self, date):
@@ -242,14 +237,3 @@ class group_trader(trader):
         codes = list(
             today_factor[today_factor['factor'] == self.lable]['code'])
         return codes
-
-    def caculate_return(self):
-        """
-        get return from close
-        """
-        c = self.close.reset_index().pivot('trade_dt', 'code')['close']
-        ret = (c - c.shift())/c.shift()
-        ret = ret.fillna(0)
-        ret = pd.DataFrame(ret.stack())
-        ret.columns = ['return']
-        return ret
