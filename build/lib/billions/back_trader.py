@@ -1,16 +1,16 @@
+from billions.tools.analysier import analysier
 import pandas as pd
 import numpy as np
-from pandas.io.sql import read_sql_query
 from tqdm import tqdm
 
 from billions.tools.profolio import *
 from billions.tools.deal_time import *
-from billions.tools.ploter import *
 
 # TODO: 手续费
-# TODO：买入和卖出价格，当前均使用收盘价，假设能够以收盘价成交s
+# TODO：买入和卖出价格，当前均使用收盘价，假设能够以收盘价成交
 # TODO: 支持做空（profolio中amount可以为负值）
-# TODO: profolio中加入买入价格等信息
+# TODO: 加入乘子，保证交易金额为整数
+
 
 class trader:
     """
@@ -23,7 +23,7 @@ class trader:
     peride: the peride you need to change your profolio
     """
 
-    def __init__(self, data, total_amount=1000000, peride='D', price_col='close'):
+    def __init__(self, data, total_amount=1000000, peride='D', price_col='close', name='strategy'):
         """
         init function
         """
@@ -32,6 +32,7 @@ class trader:
         self.peride = peride
         self.price_col = price_col
         self.lable = 1
+        self.name = name
 
         self.lables = [1]
         self.dates = np.unique(np.array(list(self.data.index))[:, 0])
@@ -93,12 +94,23 @@ class trader:
                 self.dates[0], self.total_amount)
 
     # analysis function
-    def plot(self, name='Strategy'):
+    def plot(self):
         """
         return the ploter
         **You don't want to change this**
         """
-        return line_ploter(self, name)
+        self.analysier.plot()
+
+    def trade_summary(self):
+        """
+        get summary
+        **You don't want to change this**
+        """
+        self.summaries = self.analysier.summary()
+
+    def summary(self):
+        self.plot()
+        self.trade_summary()
 
     # main function
     def _run(self, lable=-1, peride=-1, reset=True):
@@ -166,6 +178,9 @@ class trader:
                 self.longshort = self.longshort.drop('group-'+str(i), axis=1)
         elif len(self.lables) < 2:
             self.longshort = -1
+        self.networth = (
+            ((self.networth - self.networth.shift())/self.networth.shift()+1).cumprod())
+        self.analysier = analysier(self)
 
     def trade(self, date, prices):
         pass
@@ -191,11 +206,11 @@ class group_trader(trader):
     inverse: if the factor is inversed
     """
 
-    def __init__(self, data, total_amount=1000000, peride='D', price_col='close', number=5, inverse=False):
+    def __init__(self, data, total_amount=1000000, peride='D', price_col='close', name='strategy', number=5, inverse=False):
         """
         init fuction
         """
-        trader.__init__(self, data, total_amount, peride, price_col)
+        trader.__init__(self, data, total_amount, peride, price_col, name=name)
 
         self.factor = data[['factor']]
         self.close = data[['close']]

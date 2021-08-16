@@ -11,5 +11,4 @@ billions/tools/__init__.py
 billions/tools/analysier.py
 billions/tools/deal_time.py
 billions/tools/log.py
-billions/tools/ploter.py
 billions/tools/profolio.py
