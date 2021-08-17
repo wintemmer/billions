@@ -248,7 +248,48 @@ class group_trader(trader):
         else:
             def change(x): return x
         today_factor['factor'] = pd.qcut(
-            change(today_factor['factor']), self.number, labels=range(1, self.number+1, 1))
+            change(today_factor['factor']), self.number, labels=range(1, self.number+1, 1),
+            duplicates='raise')
         codes = list(
             today_factor[today_factor['factor'] == self.lable]['code'])
+        return codes
+
+
+class top_trader(trader):
+
+    def __init__(self, data, total_amount=1000000, peride='D', price_col='close', name='strategy', top=1):
+        """
+        init fuction
+        """
+        trader.__init__(self, data, total_amount, peride, price_col, name=name)
+
+        self.top = top
+        self.factor = data[['factor']]
+        self.close = data[['close']]
+
+    # main function
+    def trade(self, date, prices):
+        """
+        trade function: change profolio to target
+        """
+        codes = self.signal(date)
+        buys = []
+        sells = []
+        for code in self.profolio.get_profolio():
+            if code not in codes:
+                sells.append(code)
+        for code in codes:
+            if code not in self.profolio.get_profolio():
+                buys.append(code)
+
+        self.profolio.add_n_sell(buys, sells, prices)
+
+    # child tool function
+    def signal(self, date):
+        """
+        get code list in a certain date
+        """
+        today_factor = self.factor.loc[date, :].sort_values(
+            'factor', ascending=False).reset_index()
+        codes = list(today_factor['code'][:self.top])
         return codes

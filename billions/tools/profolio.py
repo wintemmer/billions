@@ -76,7 +76,8 @@ class profolio:
     def add_n_sell(self, buys, sells, prices):
         self.sell_all(sells, prices)
         self.add(buys, prices)
-        self.rebalance()
+        if len(self.profolio)>1:
+            self.rebalance()
 
     def rebalance(self):
         each = int(self.get_total() / (len(self.profolio)-1))
