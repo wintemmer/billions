@@ -131,14 +131,17 @@ class trader:
 
         # satrt to trade
         networths = {}
+        result = {}
         for date in tqdm(self.dates, leave=False, desc="lable-" + str(self.lable)):
             prices = self.today_price(date)
             self.profolio.adjust_price(date, prices)  # adjust daily price
             if date in self.trade_dates:
                 self.trade(date, prices)
             networths[date] = self.profolio.get_total()
+            result[date] = self.profolio.get_profolio()
         # result = pd.DataFrame(result.values(), index=result.keys())
         # result = result.fillna({'amount':0, 'price':0, 'buy_price': 0})
+        self.results[self.lable] = pd.DataFrame(result).T
         return pd.DataFrame([networths]).T
 
         # result = self.results[self.lable]
