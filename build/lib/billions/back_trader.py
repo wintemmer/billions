@@ -141,7 +141,7 @@ class trader:
             result[date] = self.profolio.get_profolio()
         # result = pd.DataFrame(result.values(), index=result.keys())
         # result = result.fillna({'amount':0, 'price':0, 'buy_price': 0})
-        self.results[self.lable] = pd.DataFrame(result).T
+        self.results[self.lable] = result
         return pd.DataFrame([networths]).T
 
         # result = self.results[self.lable]
