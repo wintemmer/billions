@@ -28,11 +28,14 @@ class trader:
         init function
         """
         self.data = data
+        self.dict_data = self.data.to_dict('index')
         self.total_amount = total_amount
         self.peride = peride
         self.price_col = price_col
         self.lable = 1
         self.name = name
+        self.closes = self.data.reset_index().pivot(
+            'trade_dt', 'code', self.price_col).to_dict('index')
 
         self.lables = [1]
         self.dates = np.unique(np.array(list(self.data.index))[:, 0])
@@ -64,8 +67,10 @@ class trader:
         it can get returns in certain date
         **You don't want to change this**
         """
-        prices = self.data.loc[date].reset_index()[['code', self.price_col]]
-        return dict(prices.set_index('code')[self.price_col])
+        # prices = self.data.loc[date].reset_index()[['code', self.price_col]]
+        # return dict(prices.set_index('code')[self.price_col])
+        return self.closes[date]
+        
 
     # set function
     def set_lable(self, lable):
@@ -188,9 +193,6 @@ class trader:
     def trade(self, date, prices):
         pass
 
-    def signal(self):
-        return
-
 
 class group_trader(trader):
     """
@@ -215,19 +217,34 @@ class group_trader(trader):
         """
         trader.__init__(self, data, total_amount, peride, price_col, name=name)
 
-        self.factor = data[['factor']]
-        self.close = data[['close']]
+        # self.factor = data[['factor']]
+
         self.inverse = not inverse
         self.number = number
 
         self.lables = list(range(1, self.number+1, 1))
+
+        if self.inverse:
+            self.factors = (self.data.reset_index().pivot(
+                'trade_dt', 'code', 'factor')*-1).to_dict('index')
+        else:
+            self.factors = self.data.reset_index().pivot(
+                'trade_dt', 'code', 'factor').to_dict('index')
 
     # main function
     def trade(self, date, prices):
         """
         trade function: change profolio to target
         """
-        codes = self.signal(date)
+        # get codes
+        today_factor = self.factors[date]
+
+        ind = np.where(list(pd.qcut(list(today_factor.values()),
+                            self.number, labels=range(1, self.number+1, 1)) == self.lable))[0]
+
+        codes = np.array(list(today_factor.keys()))[ind]
+
+        # trade
         buys = []
         sells = []
         for code in self.profolio.get_profolio():
@@ -238,24 +255,6 @@ class group_trader(trader):
                 buys.append(code)
 
         self.profolio.add_n_sell(buys, sells, prices)
-
-    # child tool function
-    def signal(self, date):
-        """
-        get code list in a certain date
-        """
-        today_factor = self.factor.loc[date, :].sort_values(
-            'factor', ascending=self.inverse).reset_index()
-        if self.inverse:
-            def change(x): return -x
-        else:
-            def change(x): return x
-        today_factor['factor'] = pd.qcut(
-            change(today_factor['factor']), self.number, labels=range(1, self.number+1, 1),
-            duplicates='raise')
-        codes = list(
-            today_factor[today_factor['factor'] == self.lable]['code'])
-        return codes
 
 
 class top_trader(trader):
@@ -275,6 +274,11 @@ class top_trader(trader):
         """
         trade function: change profolio to target
         """
+        today_factor = self.factors[date]
+        codes = list(dict(sorted(today_factor.items(),
+             key=lambda e: e[1], reverse=True)).keys())[:self.top]
+
+
         codes = self.signal(date)
         buys = []
         sells = []
@@ -286,13 +290,3 @@ class top_trader(trader):
                 buys.append(code)
 
         self.profolio.add_n_sell(buys, sells, prices)
-
-    # child tool function
-    def signal(self, date):
-        """
-        get code list in a certain date
-        """
-        today_factor = self.factor.loc[date, :].sort_values(
-            'factor', ascending=False).reset_index()
-        codes = list(today_factor['code'][:self.top])
-        return codes
