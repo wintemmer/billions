@@ -27,6 +27,7 @@ class trader:
         """
         init function
         """
+        data = data.fillna(0)
         self.data = data
         self.dict_data = self.data.to_dict('index')
         self.total_amount = total_amount
@@ -35,7 +36,9 @@ class trader:
         self.lable = 1
         self.name = name
         self.closes = self.data.reset_index().pivot(
-            'trade_dt', 'code', self.price_col).to_dict('index')
+            'trade_dt', 'code', self.price_col)
+        self.closes = self.closes.fillna(0)
+        self.closes = self.closes.to_dict('index')
 
         self.lables = [1]
         self.dates = np.unique(np.array(list(self.data.index))[:, 0])
@@ -112,10 +115,12 @@ class trader:
         **You don't want to change this**
         """
         self.summaries = self.analysier.summary()
+        return self.summaries
 
     def summary(self):
         self.plot()
         self.trade_summary()
+        self.analysier.plot_summary()
 
     # main function
     def _run(self, lable=-1, peride=-1, reset=True):

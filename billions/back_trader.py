@@ -115,10 +115,12 @@ class trader:
         **You don't want to change this**
         """
         self.summaries = self.analysier.summary()
+        return self.summaries
 
     def summary(self):
         self.plot()
         self.trade_summary()
+        self.analysier.plot_summary()
 
     # main function
     def _run(self, lable=-1, peride=-1, reset=True):

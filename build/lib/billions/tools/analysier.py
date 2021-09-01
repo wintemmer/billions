@@ -65,9 +65,11 @@ class analysier:
                 summary = self.tradeSummary(list(lsret.index), list(
                     lsret[column]), column, freq='D')
                 summaries.append(summary)
-        summaries = pd.concat(summaries, axis=1)
+        self.summaries = pd.concat(summaries, axis=1)
+        return self.summaries
 
-        df = summaries
+    def plot_summary(self):
+        df = self.summaries
         values = [df.index]
         for column in df.columns:
             values.append(df[column])
@@ -82,7 +84,7 @@ class analysier:
         fig.update_layout(title=self.get_name() + ": trade summary table")
         fig.show()
 
-        return summaries
+        # return summaries
 
     def tradeSummary(self, date, ret, group, freq='D'):
         df = pd.DataFrame({'date': date, 'ret': ret})
