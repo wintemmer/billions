@@ -19,34 +19,36 @@ class profolio:
         return pro
 
     def buy(self, stock, amount, price):
-        if self.profolio['freemoney']['amount'] < amount*price:
-            log(str(self.date) + ' -- Sorry, you don\'t have enoung money')
-        else:
-            if stock in self.profolio.keys():
-                self.profolio[stock]['amount'] += amount
-                self.profolio[stock]['price'] = price
-                self.profolio[stock]['buy_price'] = price
-                self.profolio['freemoney']['amount'] -= amount*price
+        if price != 0:
+            if self.profolio['freemoney']['amount'] < amount*price:
+                log(str(self.date) + ' -- Sorry, you don\'t have enoung money')
             else:
-                self.profolio[stock] = {
-                    'amount': amount,
-                    'price': price,
-                    'buy_price': price
-                }
-                self.profolio['freemoney']['amount'] -= amount*price
+                if stock in self.profolio.keys():
+                    self.profolio[stock]['amount'] += amount
+                    self.profolio[stock]['price'] = price
+                    self.profolio[stock]['buy_price'] = price
+                    self.profolio['freemoney']['amount'] -= amount*price
+                else:
+                    self.profolio[stock] = {
+                        'amount': amount,
+                        'price': price,
+                        'buy_price': price
+                    }
+                    self.profolio['freemoney']['amount'] -= amount*price
 
     def sell(self, stock, amount, price):
-        if stock not in self.profolio.keys():
-            log(str(self.date) + ' -- Sorry, you don\'t have ' + stock)
-        else:
-            if self.profolio[stock]['amount'] < amount:
-                log(str(self.date) + ' -- Sorry, you don\'t have enough ' + stock)
+        if price != 0:
+            if stock not in self.profolio.keys():
+                log(str(self.date) + ' -- Sorry, you don\'t have ' + stock)
             else:
-                self.profolio[stock]['amount'] -= amount
-                self.profolio[stock][price] = price
-                self.profolio['freemoney']['amount'] += amount*price
-                if self.profolio[stock]['amount'] == 0:
-                    self.profolio.pop(stock)
+                if self.profolio[stock]['amount'] < amount:
+                    log(str(self.date) + ' -- Sorry, you don\'t have enough ' + stock)
+                else:
+                    self.profolio[stock]['amount'] -= amount
+                    self.profolio[stock][price] = price
+                    self.profolio['freemoney']['amount'] += amount*price
+                    if self.profolio[stock]['amount'] == 0:
+                        self.profolio.pop(stock)
 
     def profolio_report(self):
         log(str(self.date) + ' -- my profolio: ' + str(self.profolio) +
@@ -76,26 +78,28 @@ class profolio:
     def add_n_sell(self, buys, sells, prices):
         self.sell_all(sells, prices)
         self.add(buys, prices)
-        if len(self.profolio)>1:
+        if self.getlen()> 0:
             self.rebalance()
 
     def rebalance(self):
-        each = int(self.get_total() / (len(self.profolio)-1))
+        each = int(self.get_total() / self.getlen())
         stocks = list(self.profolio.keys())
         for stock in stocks:
             if stock == 'freemoney':
                 pass
             else:
                 if self.get_money(stock) > each:
-                    self.sell(stock, (self.get_money(stock) -
-                              each)/self.profolio[stock]['price'], self.profolio[stock]['price'])
+                    if self.profolio[stock]['price'] != 0:
+                        self.sell(stock, (self.get_money(stock) -
+                                each)/self.profolio[stock]['price'], self.profolio[stock]['price'])
         for stock in stocks:
             if stock == 'freemoney':
                 pass
             else:
                 if self.get_money(stock) < each:
-                    self.buy(stock, (each - self.get_money(stock))/self.profolio[stock]['price'],
-                             self.profolio[stock]['price'])
+                    if self.profolio[stock]['price'] != 0:
+                        self.buy(stock, (each - self.get_money(stock))/self.profolio[stock]['price'],
+                                self.profolio[stock]['price'])
 
     def get_money(self, stock):
         money = self.profolio[stock]['amount'] * self.profolio[stock]['price']
@@ -107,3 +111,10 @@ class profolio:
             money = self.get_money(stock)
             moneys += money
         return moneys
+
+    def getlen(self):
+        x = -1
+        for stock in self.profolio.keys():
+            if self.profolio[stock]['price'] != 0 or stock=='freemoeny':
+                x += 1
+        return x
