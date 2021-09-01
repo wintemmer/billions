@@ -5,6 +5,15 @@ def __init__():
     pass
 
 
+def stack(df, type='factor'):
+    df = df.stack().reset_index()
+    df.columns = ['trade_dt', 'code', type]
+    return df
+
+def pivot(df, type='factor'):
+    df = df.reset_index().pivot('trade_dt', 'code', type)
+    return df
+
 def loader_factor_close(fname, cname, ftype='csv'):
     """
     Read data from file.

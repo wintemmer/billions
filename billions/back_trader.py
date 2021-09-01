@@ -269,6 +269,9 @@ class top_trader(trader):
         self.factor = data[['factor']]
         self.close = data[['close']]
 
+        self.factors = (self.data.reset_index().pivot(
+            'trade_dt', 'code', 'factor')).to_dict('index')
+
     # main function
     def trade(self, date, prices):
         """
@@ -276,10 +279,8 @@ class top_trader(trader):
         """
         today_factor = self.factors[date]
         codes = list(dict(sorted(today_factor.items(),
-             key=lambda e: e[1], reverse=True)).keys())[:self.top]
+                                 key=lambda e: e[1], reverse=True)).keys())[:self.top]
 
-
-        codes = self.signal(date)
         buys = []
         sells = []
         for code in self.profolio.get_profolio():
