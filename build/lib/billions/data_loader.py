@@ -61,5 +61,6 @@ def loader_factor_close(fname, cname, ftype='csv'):
 
 def load_price(fname):
     data = pd.read_csv(fname, index_col=0)
+    data.trade_dt = pd.DatetimeIndex(data.trade_dt)
     data = data.set_index(['trade_dt', 'code'])
     return data

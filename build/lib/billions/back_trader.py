@@ -42,6 +42,7 @@ class trader:
 
         self.lables = [1]
         self.dates = np.unique(np.array(list(self.data.index))[:, 0])
+        self.codes = np.unique(np.array(list(self.data.index))[:, 1])
         self.profolio = profolio(self.dates[0], total_amount)
 
         self.results = {}

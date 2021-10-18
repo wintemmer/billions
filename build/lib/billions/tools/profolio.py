@@ -56,9 +56,14 @@ class profolio:
 
     def adjust_price(self, date, prices):
         self.date = date
-        for code in self.profolio.keys():
+        codes = list(self.profolio.keys())
+        for code in codes:
             if code != 'freemoney':
-                self.profolio[code]['price'] = prices[code]
+                if prices[code] == 0:
+                    self.sell(
+                        code, self.profolio[code]['amount'], self.profolio[code]['price'])
+                else:
+                    self.profolio[code]['price'] = prices[code]
 
     def sell_all(self, stocks, prices):
         for stock in stocks:
@@ -69,7 +74,7 @@ class profolio:
 
     def add(self, stocks, prices):
         for stock in stocks:
-            self.profolio[stock] = {
+            self.profolio[stock] = {    
                 'amount': 0,
                 'price': prices[stock],
                 'buy_price': prices[stock]
@@ -115,6 +120,5 @@ class profolio:
     def getlen(self):
         x = -1
         for stock in self.profolio.keys():
-            if self.profolio[stock]['price'] != 0 or stock=='freemoeny':
-                x += 1
+            x += 1
         return x
