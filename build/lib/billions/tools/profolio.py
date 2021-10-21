@@ -50,6 +50,18 @@ class profolio:
                     if self.profolio[stock]['amount'] == 0:
                         self.profolio.pop(stock)
 
+    def short(self, stock, amount, price):
+        if price != 0:
+            self.profolio[stock]['amount'] -= amount
+            self.profolio[stock][price] = price
+            self.profolio['freemoney']['amount'] += amount*price
+    
+    def closure(self, stock, amount, price):
+        if price != 0:
+            self.profolio[stock]['amount'] += amount
+            self.profolio[stock][price] = price
+            self.profolio['freemoney']['amount'] -= amount*price
+
     def profolio_report(self):
         log(str(self.date) + ' -- my profolio: ' + str(self.profolio) +
             ' -- total: ' + str(np.mean(list(self.profolio.values()))))
